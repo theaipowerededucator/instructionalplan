@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructional Plan & Syllabus Generator</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF and html2canvas for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Using Inter font as the base */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for progress bar */
+        .progress-bar-fill {
+            transition: width 0.5s ease-in-out;
+        }
+        /* Styling for the hidden PDF template to ensure proper rendering */
+        #pdf-template {
+            width: 8.5in; /* Standard letter width */
+            height: 11in; /* Standard letter height */
+            box-sizing: border-box;
+            padding: 0.75in;
+            position: absolute;
+            left: -9999px; /* Position it off-screen */
+            top: 0;
+            background-color: white;
+            color: #111827; /* Tailwind gray-900 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <div class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 space-y-8">
+        <!-- Header -->
+        <div>
+            <h1 class="text-3xl font-bold text-center text-gray-800">Instructional Plan Generator</h1>
+            <p class="text-center text-gray-500 mt-2">Follow the steps to create your course syllabus.</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full progress-bar-fill" style="width: 25%;"></div>
+        </div>
+
+        <!-- Form Steps -->
+        <div id="form-steps">
+            <!-- Step 1: Teacher & Course Info -->
+            <div id="step-1" class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Step 1: Course & Teacher Information</h2>
+                <div>
+                    <label for="courseName" class="block text-sm font-medium text-gray-700">Course Name</label>
+                    <input type="text" id="courseName" name="courseName" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Algebra I">
+                </div>
+                <div class="space-y-4" id="teachers-container">
+                    <!-- Teacher inputs will be dynamically added here -->
+                </div>
+                <button type="button" id="add-teacher-btn" class="text-sm font-medium text-blue-600 hover:text-blue-800">+ Add Another Teacher</button>
+            </div>
+
+            <!-- Step 2: Logistics -->
+            <div id="step-2" class="hidden space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Step 2: Logistics</h2>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Grade(s)</label>
+                    <div id="grades-group" class="mt-2 p-3 border border-gray-300 rounded-md grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        <!-- Grade checkboxes will be populated by JS -->
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Campus(es)</label>
+                    <div id="campus-group" class="mt-2 space-y-2 p-3 border border-gray-300 rounded-md">
+                        <div class="flex items-center">
+                            <input id="campus-te" name="campus" type="checkbox" value="Tatum Elementary" class="campus-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="campus-te" class="ml-2 block text-sm text-gray-900">Tatum Elementary</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="campus-fi" name="campus" type="checkbox" value="Farmersville Intermediate" class="campus-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="campus-fi" class="ml-2 block text-sm text-gray-900">Farmersville Intermediate</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="campus-fjh" name="campus" type="checkbox" value="Farmersville Junior High" class="campus-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="campus-fjh" class="ml-2 block text-sm text-gray-900">Farmersville Junior High</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="campus-fhs" name="campus" type="checkbox" value="Farmersville High School" class="campus-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="campus-fhs" class="ml-2 block text-sm text-gray-900">Farmersville High School</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Curriculum -->
+            <div id="step-3" class="hidden space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Step 3: Curriculum Details</h2>
+                
+                <!-- Instructions Box -->
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700 space-y-4">
+                    <div>
+                        <h3 class="text-md font-semibold text-blue-800 mb-2">Instructions for finding TEKS Information:</h3>
+                        <ul class="list-decimal list-inside space-y-2">
+                            <li>Go to the following link: <a href="https://tea.texas.gov/academics/curriculum-standards/teks-review/texas-essential-knowledge-and-skills" target="_blank" class="font-semibold text-blue-600 hover:underline">TEA TEKS Website</a>.</li>
+                            <li>Find the TEKS for your course using the "Web" version. Once on the page for your specific course, copy the URL from your browser's address bar and paste it into the "Link to TEKS" box below.</li>
+                            <li>On that same course page, click “View PDF” (next to Historical and Texas Register at the top), then click “Generate PDF.” Save the downloaded file to your computer where you can find it for the next step.</li>
+                            <li>Go to ChatGPT or Gemini, attach your PDF, and then ask the following prompt: <br><em class="block mt-1 p-2 bg-blue-100 rounded font-bold">"Give me a 4-6 sentence summary of what the TEKS cover for the attached course. This is for an instructional plan overview of what is taught in this class for the year based on the TEKS."</em></li>
+                            <li>Copy and paste the output from the AI into the "Summary of TEKS Coverage" box below.</li>
+                        </ul>
+                    </div>
+                    <hr class="border-blue-200">
+                    <div>
+                        <h3 class="text-md font-semibold text-blue-800 mb-2">Special Notes for Early Childhood Teachers:</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <h4 class="font-semibold text-blue-800">For Prekindergarten (PK) Teachers:</h4>
+                                <p>Simply use the <strong class="font-medium">Prekindergarten Guidelines</strong> linked on the TEA TEKS Website page. If you click that link, it will open TEA's PK webpage. Scroll down and find the link for <strong class="font-medium">"2022 TX Prekindergarten Guidelines PK4 Streamlined."</strong> Use that link for the "Link to TEKS" box, and save the PDF for steps 4 and 5.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-blue-800">For Kindergarten - 2nd Grade Teachers:</h4>
+                                <p>Use the <strong class="font-medium">"Texas Essential Knowledge and Skills by Grade Level"</strong> PDFs linked at the bottom of the TEA TEKS Website. You can link directly to those documents for the "Link to TEKS" section, and save those PDFs to your computer to complete steps 4 and 5.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="teksLink" class="block text-sm font-medium text-gray-700">Link to TEKS</label>
+                    <input type="url" id="teksLink" name="teksLink" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Paste the web link for your course here...">
+                </div>
+                <div>
+                    <label for="teksSummary" class="block text-sm font-medium text-gray-700">Summary of TEKS Coverage</label>
+                    <textarea id="teksSummary" name="teksSummary" rows="6" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Paste the summary from the AI here..."></textarea>
+                </div>
+            </div>
+
+            <!-- Step 4: Review & Submit -->
+            <div id="step-4" class="hidden space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Step 4: Review & Generate</h2>
+                <p class="text-gray-600">Please review your information below. If everything is correct, click the "Generate PDF" button to create your syllabus.</p>
+                <div id="review-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+                    <!-- Review content will be populated here by JavaScript -->
+                </div>
+                <div id="loading-spinner" class="hidden items-center justify-center space-x-2">
+                    <div class="w-6 h-6 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+                    <span class="text-gray-600">Generating your PDF... Please wait.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div id="navigation-buttons" class="flex justify-between pt-6 border-t border-gray-200">
+            <button id="prev-btn" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Previous</button>
+            <button id="next-btn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Next</button>
+            <button id="submit-btn" class="hidden px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generate PDF</button>
+        </div>
+    </div>
+
+    <!-- Hidden Template for PDF Generation -->
+    <div id="pdf-template">
+        <div class="flex flex-col h-full">
+            <!-- Header Section -->
+            <div class="text-right border-b-2 border-gray-800 pb-4 mb-8">
+                <h1 id="pdf-courseName" class="text-4xl font-bold">Course Name</h1>
+                <h2 id="pdf-campus" class="text-lg text-gray-700 mt-2 whitespace-nowrap">Campus Name</h2>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-3 gap-8 flex-grow">
+                <!-- Left Column: Instructor Info -->
+                <div class="col-span-1 border-r pr-6 border-gray-300">
+                    <h3 class="text-xl font-semibold border-b border-gray-400 pb-2 mb-4">Instructor Information</h3>
+                    <div id="pdf-teachers-list" class="space-y-4">
+                        <!-- Teacher list will be populated here -->
+                    </div>
+                     <div class="mt-4">
+                        <p class="font-semibold text-sm">Grade(s):</p>
+                        <p id="pdf-grades" class="text-xs">Grades</p>
+                    </div>
+                </div>
+
+                <!-- Right Column: Course Details -->
+                <div class="col-span-2">
+                    <h3 class="text-xl font-semibold border-b border-gray-400 pb-2 mb-4">Course Overview</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-lg font-semibold mb-2">TEKS Summary</h4>
+                            <p id="pdf-teksSummary" class="text-gray-800 whitespace-pre-wrap">TEKS summary will appear here.</p>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold mb-2">State Standards (TEKS)</h4>
+                            <p class="text-gray-800">For a complete list of the Texas Essential Knowledge and Skills for this course, please visit the following link:</p>
+                            <a id="pdf-teksLink" href="#" class="text-blue-600 break-all">TEKS Link</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // State management
+            let currentStep = 1;
+            const totalSteps = 4;
+
+            // --- Initial Setup ---
+            const grades = ['PK', 'KG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+            const gradesGroup = document.getElementById('grades-group');
+            grades.forEach(grade => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                div.innerHTML = `
+                    <input id="grade-${grade.toLowerCase()}" name="grade" type="checkbox" value="${grade}" class="grade-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="grade-${grade.toLowerCase()}" class="ml-2 block text-sm text-gray-900">${grade}</label>
+                `;
+                gradesGroup.appendChild(div);
+            });
+
+            // DOM Elements
+            const progressBar = document.getElementById('progress-bar');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            const steps = [
+                document.getElementById('step-1'),
+                document.getElementById('step-2'),
+                document.getElementById('step-3'),
+                document.getElementById('step-4'),
+            ];
+            const teachersContainer = document.getElementById('teachers-container');
+            const addTeacherBtn = document.getElementById('add-teacher-btn');
+
+            // --- Dynamic Teacher Fields ---
+            let teacherCount = 0;
+            const addTeacher = () => {
+                teacherCount++;
+                const teacherDiv = document.createElement('div');
+                teacherDiv.className = 'p-4 border border-gray-200 rounded-lg space-y-3 relative';
+                teacherDiv.id = `teacher-group-${teacherCount}`;
+
+                teacherDiv.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700">Teacher #${teacherCount}</label>
+                    <div>
+                        <label for="teacherName-${teacherCount}" class="block text-xs font-medium text-gray-600">Name</label>
+                        <input type="text" id="teacherName-${teacherCount}" name="teacherName" class="teacher-name mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., John Smith">
+                    </div>
+                    <div>
+                        <label for="contactInfo-${teacherCount}" class="block text-xs font-medium text-gray-600">Contact Info (Email/Phone)</label>
+                        <input type="text" id="contactInfo-${teacherCount}" name="contactInfo" class="teacher-contact mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., john.smith@school.edu">
+                    </div>
+                    ${teacherCount > 1 ? '<button type="button" class="absolute top-2 right-2 text-red-500 hover:text-red-700" onclick="removeTeacher('+teacherCount+')">&times;</button>' : ''}
+                `;
+                teachersContainer.appendChild(teacherDiv);
+            };
+
+            window.removeTeacher = (id) => {
+                document.getElementById(`teacher-group-${id}`).remove();
+            };
+            
+            addTeacherBtn.addEventListener('click', addTeacher);
+            addTeacher(); // Add the first teacher field by default
+
+            // --- UI and Navigation ---
+            const updateUI = () => {
+                progressBar.style.width = `${(currentStep / totalSteps) * 100}%`;
+                steps.forEach((step, index) => {
+                    step.classList.toggle('hidden', index + 1 !== currentStep);
+                });
+                prevBtn.disabled = currentStep === 1;
+                nextBtn.classList.toggle('hidden', currentStep === totalSteps);
+                submitBtn.classList.toggle('hidden', currentStep !== totalSteps);
+                if (currentStep === totalSteps) {
+                    populateReview();
+                }
+            };
+
+            nextBtn.addEventListener('click', () => {
+                const currentStepDiv = steps[currentStep - 1];
+                const inputs = currentStepDiv.querySelectorAll('input:not([type="checkbox"]), textarea');
+                let allValid = true;
+
+                // Validate standard text inputs and textareas
+                inputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        input.style.borderColor = 'red';
+                        allValid = false;
+                    } else {
+                        input.style.borderColor = '';
+                    }
+                });
+                
+                // Special validation for checkboxes on step 2
+                if (currentStep === 2) {
+                    const campusCheckboxes = currentStepDiv.querySelectorAll('.campus-checkbox:checked');
+                    const campusGroup = document.getElementById('campus-group');
+                    if (campusCheckboxes.length === 0) {
+                        campusGroup.style.borderColor = 'red';
+                        allValid = false;
+                    } else {
+                        campusGroup.style.borderColor = '#D1D5DB'; // tailwind gray-300
+                    }
+
+                    const gradeCheckboxes = currentStepDiv.querySelectorAll('.grade-checkbox:checked');
+                    const gradesGroupDiv = document.getElementById('grades-group');
+                    if (gradeCheckboxes.length === 0) {
+                        gradesGroupDiv.style.borderColor = 'red';
+                        allValid = false;
+                    } else {
+                        gradesGroupDiv.style.borderColor = '#D1D5DB';
+                    }
+                }
+
+                if (allValid && currentStep < totalSteps) {
+                    currentStep++;
+                    updateUI();
+                } else if (!allValid) {
+                    alert('Please fill out all required fields in the current step before proceeding.');
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    updateUI();
+                }
+            });
+
+            // --- Data Handling ---
+            const getFormData = () => {
+                const teachers = [];
+                const teacherNameInputs = document.querySelectorAll('.teacher-name');
+                const teacherContactInputs = document.querySelectorAll('.teacher-contact');
+                teacherNameInputs.forEach((nameInput, index) => {
+                    teachers.push({
+                        name: nameInput.value,
+                        contact: teacherContactInputs[index].value
+                    });
+                });
+
+                const selectedCampuses = Array.from(document.querySelectorAll('.campus-checkbox:checked'))
+                                              .map(cb => cb.value)
+                                              .join(' | ');
+
+                const selectedGrades = Array.from(document.querySelectorAll('.grade-checkbox:checked'))
+                                             .map(cb => cb.value)
+                                             .join(', ');
+
+                return {
+                    courseName: document.getElementById('courseName').value,
+                    teachers: teachers,
+                    grades: selectedGrades,
+                    campus: selectedCampuses,
+                    teksLink: document.getElementById('teksLink').value,
+                    teksSummary: document.getElementById('teksSummary').value,
+                };
+            };
+
+            const populateReview = () => {
+                const reviewContent = document.getElementById('review-content');
+                const formData = getFormData();
+                
+                let teachersHtml = formData.teachers.map(t => `<p class="pl-4"><strong>${t.name}:</strong> ${t.contact || 'N/A'}</p>`).join('');
+
+                reviewContent.innerHTML = `
+                    <p><strong>Course Name:</strong> ${formData.courseName || 'N/A'}</p>
+                    <p><strong>Teachers:</strong></p>
+                    ${teachersHtml}
+                    <p><strong>Grade(s):</strong> ${formData.grades || 'N/A'}</p>
+                    <p><strong>Campus(es):</strong> ${formData.campus || 'N/A'}</p>
+                    <p><strong>TEKS Link:</strong> ${formData.teksLink || 'N/A'}</p>
+                    <p><strong>TEKS Summary:</strong></p>
+                    <p class="pl-4 whitespace-pre-wrap">${formData.teksSummary || 'N/A'}</p>
+                `;
+            };
+
+            // --- PDF Generation ---
+            submitBtn.addEventListener('click', async () => {
+                const loadingSpinner = document.getElementById('loading-spinner');
+                loadingSpinner.classList.remove('hidden');
+                loadingSpinner.classList.add('flex');
+                submitBtn.disabled = true;
+                prevBtn.disabled = true;
+
+                const data = getFormData();
+
+                // Populate the hidden PDF template
+                document.getElementById('pdf-courseName').textContent = data.courseName;
+                document.getElementById('pdf-campus').textContent = data.campus;
+                document.getElementById('pdf-grades').textContent = data.grades;
+                document.getElementById('pdf-teksSummary').textContent = data.teksSummary;
+                document.getElementById('pdf-teksLink').textContent = data.teksLink;
+                document.getElementById('pdf-teksLink').href = data.teksLink;
+
+                const teachersList = document.getElementById('pdf-teachers-list');
+                teachersList.innerHTML = ''; // Clear previous entries
+                data.teachers.forEach(teacher => {
+                    const teacherEntry = document.createElement('div');
+                    teacherEntry.innerHTML = `
+                        <p class="font-semibold text-sm whitespace-nowrap">${teacher.name}</p>
+                        <p class="whitespace-nowrap" style="font-size: 0.68rem;">${teacher.contact}</p>
+                    `;
+                    teachersList.appendChild(teacherEntry);
+                });
+
+                // Use a short timeout to allow the DOM to update before capturing
+                setTimeout(async () => {
+                    try {
+                        const { jsPDF } = window.jspdf;
+                        const pdfTemplate = document.getElementById('pdf-template');
+                        const canvas = await html2canvas(pdfTemplate, { scale: 2, useCORS: true, logging: false });
+                        
+                        const pdf = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                        pdf.save(`${data.courseName}_Syllabus.pdf`);
+
+                    } catch (error) {
+                        console.error("Error generating PDF:", error);
+                        alert("An error occurred while generating the PDF. Please check the console for details.");
+                    } finally {
+                        loadingSpinner.classList.add('hidden');
+                        loadingSpinner.classList.remove('flex');
+                        submitBtn.disabled = false;
+                        prevBtn.disabled = false;
+                    }
+                }, 500);
+            });
+
+            // Initialize the UI
+            updateUI();
+        });
+    </script>
+</body>
+</html>
